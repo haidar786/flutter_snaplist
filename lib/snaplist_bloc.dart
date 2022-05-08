@@ -5,19 +5,19 @@ import 'package:snaplist/size_providers.dart';
 import 'package:snaplist/snaplist_events.dart';
 
 class SnapListBloc {
-  int _itemsCount;
-  CardSizeProvider _sizeProvider;
-  SeparatorSizeProvider _separatorProvider;
-  double _swipeVelocity;
-  Axis _axis;
+  int? _itemsCount;
+  CardSizeProvider? _sizeProvider;
+  SeparatorSizeProvider? _separatorProvider;
+  double? _swipeVelocity;
+  Axis? _axis;
 
   int _centerItemPosition = 0;
   int _nextItemPosition = -1;
 
-  double _scrollOffset;
-  double _startPosition;
+  double? _scrollOffset;
+  double? _startPosition;
 
-  double _scrollProgress;
+  double? _scrollProgress;
 
   ScrollDirection _direction = ScrollDirection.NONE;
   bool get _isVertical => _axis == Axis.vertical;
@@ -63,7 +63,11 @@ class SnapListBloc {
   Stream<UiEvent> get uiStream => _uiController.stream;
 
   SnapListBloc(
-      {int itemsCount, sizeProvider, separatorProvider, axis, swipeVelocity}) {
+      {int itemsCount = 0,
+      sizeProvider,
+      separatorProvider,
+      axis,
+      swipeVelocity}) {
     initializeField(
       itemsCount: itemsCount,
       sizeProvider: sizeProvider,
@@ -82,80 +86,94 @@ class SnapListBloc {
     });
 
     _swipeUpdateController.stream.listen((event) {
-      if (event.position < _startPosition) {
-        _direction = _isVertical ? ScrollDirection.DOWN : ScrollDirection.RIGHT;
-        _nextItemPosition = _centerItemPosition + 1;
-      } else {
-        _direction = _isVertical ? ScrollDirection.UP : ScrollDirection.LEFT;
-        _nextItemPosition = _centerItemPosition - 1;
-      }
+      try {
+        if (event.position < _startPosition!) {
+          _direction =
+              _isVertical ? ScrollDirection.DOWN : ScrollDirection.RIGHT;
+          _nextItemPosition = _centerItemPosition + 1;
+        } else {
+          _direction = _isVertical ? ScrollDirection.UP : ScrollDirection.LEFT;
+          _nextItemPosition = _centerItemPosition - 1;
+        }
 
-      if (_nextItemPosition < 0 || _nextItemPosition >= _itemsCount) {
-        return;
-      }
+        if (_nextItemPosition < 0 || _nextItemPosition >= _itemsCount!) {
+          return;
+        }
 
-      _scrollOffset = _scrollOffset - event.delta;
-      _scrollProgress = _calculateScrollProgress(event.position);
-      _offsetController.add(OffsetEvent(_scrollOffset, _scrollProgress,
-          _centerItemPosition, _nextItemPosition));
+        _scrollOffset = _scrollOffset! - event.delta;
+        _scrollProgress = _calculateScrollProgress(event.position);
+        _offsetController.add(OffsetEvent(_scrollOffset!, _scrollProgress!,
+            _centerItemPosition, _nextItemPosition));
 
-      _uiController.add(
-          UiEvent(_centerItemPosition, _nextItemPosition, _scrollProgress));
+        _uiController.add(
+            UiEvent(_centerItemPosition, _nextItemPosition, _scrollProgress!));
+      } catch (e) {}
     });
 
     _swipeEndController.stream.listen((event) {
-      if (_swipeVelocity != 0.0 &&
-          _swipeVelocity >=
-              (_isVertical ? event.vector.dy.abs() : event.vector.dx.abs()) &&
-          _scrollProgress < 50) {
-        _scrollProgress = 100 - _scrollProgress;
-        _swipeNextAndCenter();
-        _direction = ScrollDirection.NONE;
-      }
+      try {
+        if (_swipeVelocity != 0.0 &&
+            _swipeVelocity! >=
+                (_isVertical ? event.vector.dy.abs() : event.vector.dx.abs()) &&
+            _scrollProgress! < 50) {
+          _scrollProgress = 100 - _scrollProgress!;
+          _swipeNextAndCenter();
+          _direction = ScrollDirection.NONE;
+        }
 
-      if (_direction != null &&
-          _nextItemPosition >= 0 &&
-          _nextItemPosition < _itemsCount) {
-        _snipStartController.add(SnipStartEvent(
-            _scrollOffset, _calculateTargetOffset(), _scrollProgress));
-      }
+        if (_direction != null &&
+            _nextItemPosition >= 0 &&
+            _nextItemPosition < _itemsCount!) {
+          _snipStartController.add(SnipStartEvent(
+              _scrollOffset!, _calculateTargetOffset(), _scrollProgress!));
+        }
+      } catch (e) {}
     });
 
     _snipUpdateController.stream.listen((event) {
-      _scrollProgress = event.progress;
-      _scrollOffset = event.snip;
+      try {
+        _scrollProgress = event.progress;
+        _scrollOffset = event.snip;
 
-      _offsetController.add(OffsetEvent(_scrollOffset, _scrollProgress,
-          _centerItemPosition, _nextItemPosition));
-      _uiController.add(
-          UiEvent(_centerItemPosition, _nextItemPosition, _scrollProgress));
+        _offsetController.add(OffsetEvent(_scrollOffset!, _scrollProgress!,
+            _centerItemPosition, _nextItemPosition));
+        _uiController.add(
+            UiEvent(_centerItemPosition, _nextItemPosition, _scrollProgress!));
+      } catch (e) {}
     });
 
     _snipFinishController.stream.listen((event) {
-      _centerItemPosition = _nextItemPosition.clamp(0, _itemsCount - 1);
-      _nextItemPosition = -1;
-      _scrollProgress = 0.0;
+      try {
+        _centerItemPosition = _nextItemPosition.clamp(0, _itemsCount! - 1);
+        _nextItemPosition = -1;
+        _scrollProgress = 0.0;
 
-      _positionChangeController.add(PositionChangeEvent(_centerItemPosition));
+        _positionChangeController.add(PositionChangeEvent(_centerItemPosition));
+      } catch (e) {}
     });
 
     _explicitPositionChangeController.stream.listen((position) {
-      _nextItemPosition = position.clamp(0, _itemsCount - 1);
-      _scrollProgress = 0.0;
+      try {
+        _nextItemPosition = position.clamp(0, _itemsCount! - 1);
+        _scrollProgress = 0.0;
 
-      _explicitPositionChangeStream.add(_calculateTargetOffset());
+        _explicitPositionChangeStream.add(_calculateTargetOffset());
 
-      _centerItemPosition = _nextItemPosition;
-      _nextItemPosition = -1;
+        _centerItemPosition = _nextItemPosition;
+        _nextItemPosition = -1;
+      } catch (e) {}
     });
 
     _itemCountController.stream.listen((itemCount) {
-      _itemsCount = itemCount;
+      try {
+        _itemsCount = itemCount;
 
-      if (_centerItemPosition >= _itemsCount - 1) {
-        _centerItemPosition = _itemsCount - 1;
-        _positionChangeController.add(PositionChangeEvent(_centerItemPosition));
-      }
+        if (_centerItemPosition >= _itemsCount! - 1) {
+          _centerItemPosition = _itemsCount! - 1;
+          _positionChangeController
+              .add(PositionChangeEvent(_centerItemPosition));
+        }
+      } catch (e) {}
     });
   }
 
@@ -175,15 +193,27 @@ class SnapListBloc {
   }
 
   _calculateScrollProgress(double currentPosition) {
-    final distance = (_startPosition - currentPosition).abs();
-    Size cardSize = _sizeProvider(_centerItemPosition, _createBuilderData());
-    return ((distance * 100) / (_isVertical ? cardSize.height : cardSize.width))
-        .clamp(0.0, 100.0);
+    try {
+      final distance = (_startPosition! - currentPosition).abs();
+      Size cardSize = _sizeProvider!(_centerItemPosition, _createBuilderData());
+      return ((distance * 100) /
+              (_isVertical ? cardSize.height : cardSize.width))
+          .clamp(0.0, 100.0);
+    } catch (e) {}
   }
 
   double _calculateTargetOffset() {
-    return calculateTargetOffset(
-      _centerItemPosition, _nextItemPosition, _isVertical, _sizeProvider, _separatorProvider, _createBuilderData());
+    try {
+      return calculateTargetOffset(
+          _centerItemPosition,
+          _nextItemPosition,
+          _isVertical,
+          _sizeProvider!,
+          _separatorProvider!,
+          _createBuilderData());
+    } catch (e) {
+      return 0.0;
+    }
   }
 
   _createBuilderData() {
